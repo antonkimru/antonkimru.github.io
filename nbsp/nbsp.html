@@ -1,1 +1,231 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Неразрывные пробелы</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 16px;
+      line-height: 1.5;
+      max-width: 840px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 16px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      margin: 8px 0;
+      font-family: inherit;
+      font-size: 16px; /* 16px чтобы iOS не зумил при фокусе */
+      padding: 12px;
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      -webkit-appearance: none;
+      resize: vertical;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #f5f5f5;
+      flex: 1 1 auto;
+      min-height: 44px; /* комфортный тап */
+    }
+    button:active {
+      background: #e5e5e5;
+    }
 
+    @media (min-width: 600px) {
+      body {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 1.75rem;
+      }
+      button {
+        flex: 0 0 auto;
+      }
+      textarea {
+        font-size: 14px;
+        min-height: 200px;
+      }
+    }
+  </style>
+</head>
+<body>
+<h1>Неразрывные пробелы (\u00A0)</h1>
+
+  <label for="input">Исходный текст:</label>
+  <textarea id="input" placeholder="Вставь сюда русский текст..."></textarea>
+
+  <div class="actions">
+    <button id="copy">Скопировать результат</button>
+  </div>
+
+  <label for="output">Исправленный текст:</label>
+  <textarea id="output" readonly></textarea>
+
+  <script>
+    const NBSP = "\u00A0";
+
+    function addNbsp(text) {
+      // 1. Короткие предлоги и союзы (в, с, к, о, у, и, а, на, об, по, из, за, от, во)
+      const shortWords = [
+        'в','В','с','С','со','Со','к','К','о','О','у','У',
+        'и','И','а','А','на','На',
+        'об','Об','по','По','из','Из','за','За',
+        'от','От','во','Во',
+        'до','До'
+      ];
+
+      const shortPattern = new RegExp(
+        '(^|[\\s(«"\'–—-])(' + shortWords.join('|') + ')([ \\u00A0]+)(?=\\S)',
+        'g'
+      );
+
+      text = text.replace(
+        shortPattern,
+        (match, before, word, spaces) => before + word + NBSP
+      );
+
+      // 2. Союзы "но", "да"
+      text = text.replace(
+        /(^|[\s(«"'–—-])((?:[Нн]о|[Дд]а))[ \u00A0]+(?=\S)/g,
+        (_, before, word) => before + word + NBSP
+      );
+
+      // 3. Частицы "же", "бы", "ли" — к предыдущему слову
+      text = text.replace(
+        /(\S+)[ \u00A0]+((?:[Жж]е|[Бб]ы|[Лл]и))(?=[\s.,!?:;)"»\-—]|$)/g,
+        (_, prev, part) => prev + NBSP + part
+      );
+
+      // 4. Частицы "не", "ни" — к следующему слову (учитывает местоимения и предлоги)
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Нн]е|[Нн]и)[ \u00A0]+(?=\S)/g,
+        (_, before, part) => before + part + NBSP
+      );
+
+      // 5. Число + слово: 5 лет, 10 дней
+      text = text.replace(
+        /(\d+)[ \u00A0]+([A-Za-zА-Яа-яЁё])/g,
+        (_, num, firstLetter) => num + NBSP + firstLetter
+      );
+
+      // 6. Устойчивые: не менее / не более / не меньше / не больше
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Нн]е)[ \u00A0]+([Мм]енее|[Бб]олее|[Мм]еньше|[Бб]ольше)(?=[\s.,!?:;)"»\-—]|$)/g,
+        (_, before, ne, word) => before + ne + NBSP + word
+      );
+
+      // 7. по сути
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Пп]о)[ \u00A0]+([Сс]ути)(?=[\s.,!?:;)"»\-—]|$)/g,
+        (_, before, p, s) => before + p + NBSP + s
+      );
+
+      // 8. как будто
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Кк]ак)[ \u00A0]+([Бб]удто)(?=[\s.,!?:;)"»\-—]|$)/g,
+        (_, before, k, b) => before + k + NBSP + b
+      );
+
+      // 9. от силы
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Оо]т)[ \u00A0]+([Сс]илы)(?=[\s.,!?:;)"»\-—]|$)/g,
+        (_, before, o, s) => before + o + NBSP + s
+      );
+
+      // 9.1. от + слова вроде "силы", "рода", "души"
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Оо]т)[ \u00A0]+([Рр]ода|[Сс]илы|[Дд]уши|[Пп]рироды|[Сс]ердца)(?=[\s.,!?:;)"»\-—]|$)/g,
+        (_, before, o, word) => before + o + NBSP + word
+      );
+
+      // 9.2. во + слово (предлог "во" всегда неразрывный)
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Вв]о)[ \u00A0]+(?=\S)/g,
+        (_, before, vo) => before + vo + NBSP
+      );
+
+      // 9.3. и во + слово
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Ии])[ \u00A0]+([Вв]о)[ \u00A0]+(?=\S)/g,
+        (_, before, i, vo) => before + i + NBSP + vo + NBSP
+      );
+
+
+      // 10. "и т.д.", "и т.п.", "и др."
+      text = text.replace(
+        /(^|[\s(«"'–—-])([Ии])[ \u00A0]+(т\.\s*д\.|т\.\s*п\.|др\.)(?=[\s.,!?:;)"»\-—]|$)/g,
+        (_, before, i, rest) => before + i + NBSP + rest
+      );
+
+      // 11. Перед тире: "слово —"
+      text = text.replace(
+        /(\S)[ \u00A0]+—/g,
+        (_, before) => before + NBSP + '—'
+      );
+
+      // 12. Доп. обработка подряд идущих коротких предлогов, например: "и в", "а с", "но в"
+      text = text.replace(
+        new RegExp('(' + shortWords.join('|') + ')' + NBSP + '(' + shortWords.join('|') + ')\\s', 'g'),
+        (_, first, second) => first + NBSP + second + NBSP
+      );
+
+      return text;
+    }
+
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+
+    // Автообработка при вводе/вставке
+    input.addEventListener('input', () => {
+      const source = input.value;
+      const processed = addNbsp(source);
+      output.value = processed;
+    });
+
+    // Копирование результата (с фоллбэком на современный API для мобильных)
+    document.getElementById('copy').addEventListener('click', async () => {
+      const text = output.value;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          output.focus();
+          output.select();
+          document.execCommand('copy');
+        }
+      } catch (e) {
+        output.focus();
+        output.select();
+        document.execCommand('copy');
+      }
+    });
+  </script>
+</body>
+</html>
