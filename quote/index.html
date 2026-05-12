@@ -434,35 +434,53 @@ function draw() {
   drawBottomText();
 }
 
-/* ── Бренд-капсула ─────────────────────────────────── */
+/* ── Бренд-капсула · спец-компонент по брендбуку v2.2 ──
+   В сервисе цитат фон карточки тёмный — поэтому стикер белый
+   с тёмным текстом и красной точкой. Размеры фиксированные. */
 function drawBrandCapsule() {
   const text = 'CITY CHESS';
-  const padX = 24;  // --space-5
-  const padY = 12;  // --space-3
-  const x = 48;     // --space-7
-  const y = 48;     // --space-7
+  const fontSize = 18;
+  const padX = 20;
+  const padY = 10;
+  const dotSize = 10;
+  const gap = 10;
+  const x = 48;          // --space-7
+  const y = 48;          // --space-7
 
   ctx.save();
-  ctx.font = `900 22px ${FONT_SANS}`;  // --fs-lg
+  ctx.font = `900 ${fontSize}px ${FONT_SANS}`;
 
   const metrics = ctx.measureText(text);
   const textWidth = metrics.width;
-  const ascent  = metrics.actualBoundingBoxAscent  || 22;
-  const descent = metrics.actualBoundingBoxDescent || 6;
+  const ascent  = metrics.actualBoundingBoxAscent  || fontSize;
+  const descent = metrics.actualBoundingBoxDescent || 4;
   const textHeight = ascent + descent;
 
-  const w = textWidth + padX * 2;
+  const innerWidth = dotSize + gap + textWidth;
+  const w = innerWidth + padX * 2;
   const h = textHeight + padY * 2;
   const r = h / 2;
 
+  // Белая пилюля
   roundRect(ctx, x, y, w, h, r);
   ctx.fillStyle = '#ffffff';
   ctx.fill();
 
-  ctx.fillStyle = COLOR.inkInv;
-  ctx.textAlign = 'center';
+  // Красная точка
+  const dotX = x + padX;
+  const dotY = y + h / 2;
+  ctx.beginPath();
+  ctx.arc(dotX + dotSize / 2, dotY, dotSize / 2, 0, Math.PI * 2);
+  ctx.fillStyle = COLOR.accent;
+  ctx.fill();
+
+  // Тёмный текст
+  const textX = dotX + dotSize + gap;
+  const textY = y + h / 2;
+  ctx.fillStyle = '#0a0a0a';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, x + w / 2, y + h / 2);
+  ctx.fillText(text, textX, textY);
 
   ctx.restore();
 }
