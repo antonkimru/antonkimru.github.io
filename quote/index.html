@@ -1,1 +1,562 @@
 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Chess · Конструктор цитат</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,700;0,900;1,500;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   ТОКЕНЫ · BRANDBOOK V2 · ТЁМНАЯ ТЕМА
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --c-paper:     #000000;
+  --c-card:      #0f0f0f;
+  --c-ink:       #ffffff;
+  --c-ink-muted: #999999;
+  --c-ink-inv:   #0a0a0a;
+  --c-accent:    #e11919;
+  --c-rule:      #1f1f1f;
+  --c-rule-soft: #161616;
+
+  --ff-sans:  'Inter', system-ui, sans-serif;
+  --ff-serif: 'PT Serif', Georgia, serif;
+
+  --fs-xs:  11px;
+  --fs-sm:  13px;
+  --fs-md:  16px;
+  --fs-lg:  22px;
+  --fs-xl:  32px;
+  --fs-xxl: 48px;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-bold:    700;
+  --fw-black:   900;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* ── UI-токены инструмента (не из брендбука постов) ─── */
+  --tool-sidebar:    360px;
+  --tool-max-width:  1600px;
+  --tool-tap:        44px;   /* WCAG минимум для тач-целей */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { font-feature-settings: "tnum"; }
+
+body {
+  font-family: var(--ff-sans);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── Лейаут ────────────────────────────────────────── */
+.app {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  align-items: flex-start;
+  max-width: var(--tool-max-width);
+  margin: 0 auto;
+}
+
+.controls {
+  width: var(--tool-sidebar);
+  flex-shrink: 0;
+  background: var(--c-card);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+}
+
+.preview-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--space-4);
+  background: var(--c-card);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-lg);
+  position: sticky;
+  top: var(--space-6);
+}
+
+canvas {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+/* ── Заголовок ─────────────────────────────────────── */
+.controls-header {
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--c-rule);
+}
+.controls-header .eyebrow {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--c-accent);
+  margin-bottom: var(--space-2);
+}
+.controls-header h1 {
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-black);
+  line-height: 1.25;
+  margin-bottom: var(--space-2);
+}
+.controls-header .meta {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+  font-family: ui-monospace, 'SF Mono', monospace;
+}
+
+/* ── Секции ────────────────────────────────────────── */
+.section { margin-bottom: var(--space-5); }
+.section-label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  color: var(--c-accent);
+  margin-bottom: var(--space-3);
+}
+
+/* ── Поля ──────────────────────────────────────────── */
+label {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--c-ink-muted);
+  margin-bottom: var(--space-1);
+  margin-top: var(--space-3);
+}
+.section > label:first-of-type { margin-top: 0; }
+
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-rule);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  resize: vertical;
+  min-height: var(--tool-tap);
+}
+textarea {
+  min-height: var(--space-9);
+  line-height: 1.5;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--c-accent);
+}
+
+input[type="file"] {
+  width: 100%;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  font-family: inherit;
+}
+input[type="file"]::file-selector-button {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-rule);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  margin-right: var(--space-3);
+  min-height: var(--space-6);
+}
+input[type="file"]::file-selector-button:hover {
+  border-color: var(--c-ink-muted);
+}
+
+input[type="range"] {
+  width: 100%;
+  margin-top: var(--space-2);
+  accent-color: var(--c-accent);
+  height: var(--space-5);
+}
+
+small {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  display: block;
+  margin-top: var(--space-1);
+}
+
+button {
+  width: 100%;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--c-accent);
+  color: var(--c-ink);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  margin-top: var(--space-5);
+  transition: background-color 0.15s;
+  min-height: var(--space-7);
+}
+button:hover { background: #c91515; }
+button:disabled { opacity: 0.4; cursor: default; }
+button:disabled:hover { background: var(--c-accent); }
+
+/* ── АДАПТИВ ───────────────────────────────────────── */
+@media (max-width: 900px) {
+  .app {
+    flex-direction: column;
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+  .controls {
+    width: 100%;
+    padding: var(--space-5);
+  }
+  .preview-wrap {
+    width: 100%;
+    position: relative;
+    top: auto;
+    padding: var(--space-3);
+    order: -1; /* превью наверх на мобильном */
+  }
+  .controls-header h1 {
+    font-size: var(--fs-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .app { padding: var(--space-2); }
+  .controls { padding: var(--space-4); }
+  .preview-wrap { padding: var(--space-2); }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="controls">
+    <div class="controls-header">
+      <div class="eyebrow">CITY CHESS · ИНСТРУМЕНТ</div>
+      <h1>Карточка цитаты</h1>
+      <p class="meta">1080 × 1080 · PNG</p>
+    </div>
+
+    <div class="section">
+      <div class="section-label">ФОТОГРАФИЯ</div>
+      <label>Файл</label>
+      <input type="file" id="imageInputTop" accept="image/*">
+
+      <label>Сдвиг по горизонтали</label>
+      <input type="range" id="topShiftX" min="0" max="100" value="50">
+      <small>0 — слева, 50 — центр, 100 — справа</small>
+
+      <label>Сдвиг по вертикали</label>
+      <input type="range" id="topShiftY" min="0" max="100" value="50">
+      <small>0 — вверх, 50 — центр, 100 — вниз</small>
+    </div>
+
+    <div class="section">
+      <div class="section-label">ТЕКСТ</div>
+      <label>Цитата</label>
+      <textarea id="quoteText">«Хикару действует в рамках правил максимально прагматично — любой на его месте делал бы то же самое»</textarea>
+
+      <label>Автор</label>
+      <input type="text" id="authorText" value="— GM ФАБИАНО КАРУАНА">
+
+      <label>Описание</label>
+      <input type="text" id="descText" value="о способе Накамуры пробиться в ТП">
+    </div>
+
+    <button id="downloadBtn" disabled>Скачать PNG</button>
+  </aside>
+
+  <div class="preview-wrap">
+    <canvas id="card" width="1080" height="1080"></canvas>
+  </div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   ЦВЕТА · ТЕ ЖЕ ТОКЕНЫ, ЧТО В CSS
+   ═══════════════════════════════════════════════════════════ */
+const COLOR = {
+  paper:    '#000000',
+  card:     '#0f0f0f',
+  ink:      '#ffffff',
+  inkMuted: '#999999',
+  inkInv:   '#0a0a0a',
+  accent:   '#e11919',
+};
+
+const FONT_SANS  = '"Inter", system-ui, sans-serif';
+const FONT_SERIF = '"PT Serif", Georgia, serif';
+
+const WIDTH = 1080;
+const HEIGHT = 1080;
+const BOTTOM_H = 432;
+const IMAGE_H = HEIGHT - BOTTOM_H; // 648
+
+const canvas = document.getElementById('card');
+const ctx = canvas.getContext('2d');
+
+const quoteEl  = document.getElementById('quoteText');
+const authorEl = document.getElementById('authorText');
+const descEl   = document.getElementById('descText');
+const imgTopInput    = document.getElementById('imageInputTop');
+const topShiftXInput = document.getElementById('topShiftX');
+const topShiftYInput = document.getElementById('topShiftY');
+const downloadBtn = document.getElementById('downloadBtn');
+
+let topImage = null;
+let topShiftX = 50;
+let topShiftY = 50;
+
+/* ── Утилиты ───────────────────────────────────────── */
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = text.split(' ');
+  let line = '';
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    const testWidth = ctx.measureText(testLine).width;
+    if (testWidth > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), x, y);
+      line = words[n] + ' ';
+      y += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line.trim(), x, y);
+  return y + lineHeight;
+}
+
+function drawTopImage() {
+  if (!topImage) return;
+  const x = 0, y = 0, w = WIDTH, h = IMAGE_H;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+
+  const scale = Math.max(w / topImage.width, h / topImage.height);
+  const dw = topImage.width * scale;
+  const dh = topImage.height * scale;
+
+  const extraX = Math.max(0, dw - w);
+  const extraY = Math.max(0, dh - h);
+
+  const pX = topShiftX / 100;
+  const pY = topShiftY / 100;
+
+  const dx = x - extraX * pX;
+  const dy = y - extraY * pY;
+
+  ctx.drawImage(topImage, dx, dy, dw, dh);
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const radius = typeof r === 'number' ? {tl:r, tr:r, br:r, bl:r} : r;
+  ctx.beginPath();
+  ctx.moveTo(x + radius.tl, y);
+  ctx.lineTo(x + w - radius.tr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius.tr);
+  ctx.lineTo(x + w, y + h - radius.br);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius.br, y + h);
+  ctx.lineTo(x + radius.bl, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius.bl);
+  ctx.lineTo(x, y + radius.tl);
+  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+  ctx.closePath();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ОТРИСОВКА
+   ═══════════════════════════════════════════════════════════ */
+function draw() {
+  ctx.clearRect(0, 0, WIDTH, HEIGHT);
+
+  // Базовый фон
+  ctx.fillStyle = COLOR.card;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  // Верхняя зона: фото или заглушка
+  if (topImage) {
+    drawTopImage();
+  } else {
+    ctx.fillStyle = COLOR.paper;
+    ctx.fillRect(0, 0, WIDTH, IMAGE_H);
+
+    ctx.fillStyle = COLOR.inkMuted;
+    ctx.font = `500 16px ${FONT_SANS}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Загрузите фотографию', WIDTH / 2, IMAGE_H / 2);
+  }
+
+  drawBrandCapsule();
+  drawBottomText();
+}
+
+/* ── Бренд-капсула ─────────────────────────────────── */
+function drawBrandCapsule() {
+  const text = 'CITY CHESS';
+  const padX = 24;  // --space-5
+  const padY = 12;  // --space-3
+  const x = 48;     // --space-7
+  const y = 48;     // --space-7
+
+  ctx.save();
+  ctx.font = `900 22px ${FONT_SANS}`;  // --fs-lg
+
+  const metrics = ctx.measureText(text);
+  const textWidth = metrics.width;
+  const ascent  = metrics.actualBoundingBoxAscent  || 22;
+  const descent = metrics.actualBoundingBoxDescent || 6;
+  const textHeight = ascent + descent;
+
+  const w = textWidth + padX * 2;
+  const h = textHeight + padY * 2;
+  const r = h / 2;
+
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+
+  ctx.fillStyle = COLOR.inkInv;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + w / 2, y + h / 2);
+
+  ctx.restore();
+}
+
+/* ── Текст в нижнем блоке ──────────────────────────── */
+function drawBottomText() {
+  const quote = quoteEl.value.trim();
+  const author = authorEl.value.trim();
+  const desc = descEl.value.trim();
+
+  // ─── ОТСТУПЫ ВОКРУГ ТЕКСТОВОГО БЛОКА ───────────────
+  // 64 со всех сторон: слева, справа, сверху, снизу (минимум)
+  const paddingLeft  = 64;  // --space-8
+  const paddingRight = 64;  // --space-8
+  let y = IMAGE_H + 64;     // --space-8 (от фото до цитаты)
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  // ─── ЦИТАТА · PT Serif Regular, 48px, line-height 1.25 ───
+  const quoteFontSize   = 48;          // --fs-xxl
+  const quoteLineHeight = 48 * 1.25;   // 60px
+  ctx.fillStyle = COLOR.ink;
+  ctx.font = `400 ${quoteFontSize}px ${FONT_SERIF}`;
+  y = wrapText(ctx, quote, paddingLeft, y, WIDTH - paddingLeft - paddingRight, quoteLineHeight);
+
+  // ─── ЗАЗОР: ЦИТАТА → АВТОР ───
+  // Одна высота строки цитаты = редакционная конвенция «пропустить строку»
+  y += quoteLineHeight;  // 60px
+
+  // ─── АВТОР · Inter Bold Italic, 22px ───
+  ctx.fillStyle = COLOR.ink;
+  ctx.font = `italic 700 22px ${FONT_SANS}`;
+  ctx.fillText(author, paddingLeft, y);
+
+  // ─── ЗАЗОР: АВТОР → ОПИСАНИЕ ───
+  // Одна высота строки подписи (22 × 1.25 ≈ 28, округлено к токену 32)
+  y += 32;  // --space-6
+
+  // ─── ОПИСАНИЕ · Inter Medium Italic, 22px, приглушённый ───
+  ctx.fillStyle = COLOR.inkMuted;
+  ctx.font = `italic 500 22px ${FONT_SANS}`;
+  ctx.fillText(desc, paddingLeft, y);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ОБРАБОТЧИКИ
+   ═══════════════════════════════════════════════════════════ */
+imgTopInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      topImage = img;
+      draw();
+      downloadBtn.disabled = false;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+topShiftXInput.addEventListener('input', () => {
+  topShiftX = Number(topShiftXInput.value);
+  draw();
+});
+topShiftYInput.addEventListener('input', () => {
+  topShiftY = Number(topShiftYInput.value);
+  draw();
+});
+
+[quoteEl, authorEl, descEl].forEach(el => {
+  el.addEventListener('input', draw);
+});
+
+downloadBtn.addEventListener('click', () => {
+  const dataURL = canvas.toDataURL('image/png');
+  const link = document.createElement('a');
+  link.href = dataURL;
+  link.download = 'citychess-quote.png';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+});
+
+// Перерисовываем после загрузки обоих шрифтов
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
