@@ -694,15 +694,16 @@ function drawCoverText() {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
 
-  // ─── EYEBROW · Inter Bold 11px UPPERCASE, акцентный цвет ───
+  // ─── EYEBROW · Inter Bold 13px UPPERCASE, акцентный цвет ───
   // По §04.1 v2.7: UPPERCASE micro-tier → letter-spacing 0.08em
+  // Размер --fs-sm = 13px, как в .eyebrow брендбука v2.7
   ctx.fillStyle = COLOR.accent;
-  ctx.font = `700 16px ${FONT_SANS}`;
+  ctx.font = `700 13px ${FONT_SANS}`;
   if ('letterSpacing' in ctx) ctx.letterSpacing = '0.08em';
   ctx.fillText(eyebrow, paddingLeft, y);
 
   // Зазор eyebrow → h1: --space-5 = 24
-  y += 16 + 24;
+  y += 13 + 24;
 
   // ─── ЗАГОЛОВОК ─── два пресета размера
   // Короткий: 72px (display-tier, ÷4=0)
@@ -781,12 +782,33 @@ downloadBtn.addEventListener('click', () => {
   document.body.removeChild(link);
 });
 
-// Перерисовываем после загрузки обоих шрифтов
-if (document.fonts && document.fonts.ready) {
-  document.fonts.ready.then(draw);
+// Перерисовываем после загрузки шрифтов
+// Canvas в отличие от DOM не активирует шрифт автоматически —
+// нужно явно вызвать document.fonts.load() для каждой комбинации weight/size,
+// иначе Canvas тихо подставит fallback (system-ui), даже если шрифт загружен в CSS
+async function ensureFontsAndDraw() {
+  if (!document.fonts || !document.fonts.load) {
+    draw();
+    return;
+  }
+  try {
+    await Promise.all([
+      document.fonts.load('500 16px Inter'),
+      document.fonts.load('700 13px Inter'),
+      document.fonts.load('900 18px Inter'),
+      document.fonts.load('900 48px Inter'),
+      document.fonts.load('900 72px Inter'),
+      document.fonts.load('italic 500 22px Inter'),
+      document.fonts.load('italic 700 22px Inter'),
+      document.fonts.load('400 48px "PT Serif"'),
+    ]);
+  } catch (e) {
+    console.warn('Font preload error:', e);
+  }
+  draw();
 }
 
-draw();
+ensureFontsAndDraw();
 </script>
 </body>
 </html>
