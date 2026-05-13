@@ -729,26 +729,17 @@ function drawCoverFooter() {
   ctx.stroke();
   ctx.globalAlpha = 1;
 
+  // Весь текст футера — одной строкой. Это гарантирует, что точка
+  // стоит ровно между словами, как в eyebrow.
+  // Цветовых акцентов нет — это редакционная метка, не заголовок.
   const textY = HEIGHT - bottomGap + 4;
-  const fontSize = 13;
-  const lsEm = 0.08;
-  const lsPx = lsEm * fontSize;
-  const gap = 12;
-
-  ctx.font = `700 ${fontSize}px ${FONT_SANS}`;
-  if ('letterSpacing' in ctx) ctx.letterSpacing = `${lsEm}em`;
+  ctx.font = `700 13px ${FONT_SANS}`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0.08em';
   ctx.textBaseline = 'top';
-
-  // ─── «ИСТОЧНИК · {SOURCE}» ──
-  const sourceLabel = 'ИСТОЧНИК';
-  const sourceLabelWidth = ctx.measureText(sourceLabel).width + (sourceLabel.length - 1) * lsPx;
-  const sourceValue = '· ' + source.toUpperCase();
-
   ctx.textAlign = 'left';
   ctx.fillStyle = COLOR.inkMuted;
-  ctx.fillText(sourceLabel, paddingLeft, textY);
-  ctx.fillStyle = COLOR.ink;
-  ctx.fillText(sourceValue, paddingLeft + sourceLabelWidth + gap, textY);
+
+  ctx.fillText(`ИСТОЧНИК · ${source.toUpperCase()}`, paddingLeft, textY);
 }
 
 /* ═══════════════════════════════════════════════════════════
