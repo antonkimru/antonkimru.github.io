@@ -364,19 +364,10 @@ button:disabled:hover { background: var(--c-accent); }
       <input type="text" id="coverEyebrow" value="Интервью · Май 2026">
 
       <label>Заголовок</label>
-      <textarea id="coverTitle">Каруана после Польши — о Ниманне, Магнусе, Непомнящем, Оро и трендах</textarea>
+      <textarea id="coverTitle">Каруана о Магнусе</textarea>
 
-      <label>Размер</label>
-      <div class="radio-group">
-        <label class="radio">
-          <input type="radio" name="titleSize" value="short" checked>
-          <span>Короткий · 72px</span>
-        </label>
-        <label class="radio">
-          <input type="radio" name="titleSize" value="long">
-          <span>Длинный · 48px</span>
-        </label>
-      </div>
+      <label>Источник</label>
+      <input type="text" id="coverSource" value="S-Squared Podcast">
     </div>
 
     <button id="downloadBtn" disabled>Скачать PNG</button>
@@ -446,16 +437,15 @@ const downloadBtn = document.getElementById('downloadBtn');
 // Новые элементы для режима «Обложка»
 const coverEyebrowEl = document.getElementById('coverEyebrow');
 const coverTitleEl   = document.getElementById('coverTitle');
+const coverSourceEl  = document.getElementById('coverSource');
 const quoteFields    = document.getElementById('quoteFields');
 const coverFields    = document.getElementById('coverFields');
 const modeRadios     = document.querySelectorAll('input[name="mode"]');
-const titleSizeRadios = document.querySelectorAll('input[name="titleSize"]');
 
 let topImage = null;
 let topShiftX = 50;
 let topShiftY = 50;
 let mode = 'quote';                // 'quote' | 'cover'
-let titleSize = 'short';           // 'short' (72px) | 'long' (48px)
 
 /* ═══════════════════════════════════════════════════════════
    ГЕОМЕТРИЯ ПО РЕЖИМАМ
@@ -569,6 +559,7 @@ function draw() {
 
   if (mode === 'cover') {
     drawCoverText();
+    drawCoverFooter();
   } else {
     drawBottomText();
   }
@@ -705,16 +696,59 @@ function drawCoverText() {
   // Зазор eyebrow → h1: --space-5 = 24
   y += 13 + 24;
 
-  // ─── ЗАГОЛОВОК ─── два пресета размера
-  // Короткий: 72px (display-tier, ÷4=0)
-  // Длинный:  48px (display-tier, ÷4=0)
-  const titleFontSize = titleSize === 'short' ? 72 : 48;
-  const titleLineHeight = titleFontSize * 1.1;  // --lh-tight ≈ 1.05-1.1
+  // ─── ЗАГОЛОВОК · Inter Black 72px, display-tier (÷4=0) ───
+  // По §04 v2.7: крупные дисплейные заголовки имеют letter-spacing -0.01em
+  const titleFontSize = 72;
+  const titleLineHeight = titleFontSize * 1.1;
 
   ctx.fillStyle = COLOR.ink;
   ctx.font = `900 ${titleFontSize}px ${FONT_SANS}`;
   if ('letterSpacing' in ctx) ctx.letterSpacing = '-0.01em';
   wrapText(ctx, title, paddingLeft, y, maxWidth, titleLineHeight);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   РЕЖИМ «ОБЛОЖКА» · подвал «ИСТОЧНИК · X»
+   Дата не дублируется тут — она уже стоит в eyebrow наверху
+   ═══════════════════════════════════════════════════════════ */
+function drawCoverFooter() {
+  const source = applyTypography(coverSourceEl.value.trim());
+
+  const paddingLeft  = 64;
+  const paddingRight = 64;
+  const bottomGap    = 64;  // --space-8 от низа слайда
+
+  // Разделительная линия 1px
+  const lineY = HEIGHT - bottomGap - 20;
+  ctx.strokeStyle = COLOR.inkMuted;
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(paddingLeft, lineY);
+  ctx.lineTo(WIDTH - paddingRight, lineY);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  const textY = HEIGHT - bottomGap + 4;
+  const fontSize = 13;
+  const lsEm = 0.08;
+  const lsPx = lsEm * fontSize;
+  const gap = 12;
+
+  ctx.font = `700 ${fontSize}px ${FONT_SANS}`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = `${lsEm}em`;
+  ctx.textBaseline = 'top';
+
+  // ─── «ИСТОЧНИК · {SOURCE}» ──
+  const sourceLabel = 'ИСТОЧНИК';
+  const sourceLabelWidth = ctx.measureText(sourceLabel).width + (sourceLabel.length - 1) * lsPx;
+  const sourceValue = '· ' + source.toUpperCase();
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = COLOR.inkMuted;
+  ctx.fillText(sourceLabel, paddingLeft, textY);
+  ctx.fillStyle = COLOR.ink;
+  ctx.fillText(sourceValue, paddingLeft + sourceLabelWidth + gap, textY);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -745,7 +779,7 @@ topShiftYInput.addEventListener('input', () => {
   draw();
 });
 
-[quoteEl, authorEl, descEl, coverEyebrowEl, coverTitleEl].forEach(el => {
+[quoteEl, authorEl, descEl, coverEyebrowEl, coverTitleEl, coverSourceEl].forEach(el => {
   el.addEventListener('input', draw);
 });
 
@@ -760,14 +794,6 @@ modeRadios.forEach(r => {
       coverFields.classList.add('hidden');
       quoteFields.classList.remove('hidden');
     }
-    draw();
-  });
-});
-
-// Переключатель размера заголовка в режиме «Обложка»
-titleSizeRadios.forEach(r => {
-  r.addEventListener('change', () => {
-    titleSize = r.value;
     draw();
   });
 });
@@ -796,7 +822,6 @@ async function ensureFontsAndDraw() {
       document.fonts.load('500 16px Inter'),
       document.fonts.load('700 13px Inter'),
       document.fonts.load('900 18px Inter'),
-      document.fonts.load('900 48px Inter'),
       document.fonts.load('900 72px Inter'),
       document.fonts.load('italic 500 22px Inter'),
       document.fonts.load('italic 700 22px Inter'),
