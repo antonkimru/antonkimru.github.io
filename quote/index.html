@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,700;0,900;1,500;1,700&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════════════════════
    ТОКЕНЫ · BRANDBOOK V2.7 · ТЁМНАЯ ТЕМА
@@ -379,6 +380,22 @@ button:disabled:hover { background: var(--c-accent); }
 
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════
+     ИСТОЧНИК СТИКЕРА · HTML 1:1 с .brand-capsule из карусели
+     (sokolov_carousel.html, uzchess_cup_2026_standings.html и т.д.)
+     Цвета инвертированы для тёмной темы сервиса: белая пилюля + тёмный
+     текст + красная точка. Геометрия побайтно та же.
+     Рендерится через html2canvas один раз при загрузке страницы,
+     результат кэшируется как <img> и накладывается на canvas через
+     ctx.drawImage. Так браузер сам рендерит стикер тем же HTML-движком,
+     что и карусели — пиксель-в-пиксель.
+     Родитель ОБЯЗАН быть display:flex (см. брендбук §09.C-bis), иначе
+     html2canvas теряет красный круг.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="brandCapsuleSource" style="position: absolute; left: -9999px; top: 0; display: flex;">
+  <span style="display: inline-flex; align-items: center; gap: 10px; background: #ffffff; color: #0a0a0a; font-family: 'Inter', system-ui, sans-serif; font-size: 18px; font-weight: 900; padding: 10px 20px; border-radius: 999px; line-height: 1; letter-spacing: -0.01em; align-self: flex-start;"><span style="width: 10px; height: 10px; background: #e11919; border-radius: 50%; flex-shrink: 0;"></span>CITY CHESS</span>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════════════════════
    ЦВЕТА · ТЕ ЖЕ ТОКЕНЫ, ЧТО В CSS
@@ -565,57 +582,52 @@ function draw() {
   }
 }
 
-/* ── Бренд-капсула · спец-компонент по брендбуку v2.7 §05 ──
-   В сервисе цитат фон карточки тёмный — поэтому стикер белый
-   с тёмным текстом и красной точкой. Размеры фиксированные. */
+/* ── Бренд-капсула · композит HTML-варианта на canvas ──
+   Используем настоящий HTML-стикер (см. #brandCapsuleSource в DOM),
+   точная копия .brand-capsule из карусели sokolov/uzchess/polgar.
+   Рендерим через html2canvas один раз при загрузке, кэшируем как Image,
+   и в каждом draw() накладываем через ctx.drawImage.
+
+   Так браузер сам отрисовывает стикер тем же HTML-движком, что и карусели,
+   и проблема расхождения геометрии canvas vs HTML решена в корне —
+   у нас один и тот же рендер. */
+let brandCapsuleImg = null;
+
+async function prepareBrandCapsuleImage() {
+  if (typeof html2canvas !== 'function') {
+    console.warn('html2canvas not loaded; sticker will be missing');
+    return;
+  }
+  const source = document.getElementById('brandCapsuleSource');
+  const target = source && source.firstElementChild;
+  if (!target) return;
+  try {
+    const rendered = await html2canvas(target, {
+      backgroundColor: null,
+      scale: 2,           // 2× для ретины, drawImage уменьшит обратно
+      useCORS: true,
+      logging: false,
+    });
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = rendered.toDataURL('image/png');
+    });
+    brandCapsuleImg = img;
+  } catch (e) {
+    console.warn('Brand capsule render error:', e);
+  }
+}
+
 function drawBrandCapsule() {
-  const text = 'CITY CHESS';
-  const fontSize = 18;
-  const padX = 20;
-  const padY = 10;
-  const dotSize = 10;
-  const gap = 10;
+  if (!brandCapsuleImg) return;
   const x = 64;          // --space-8 (выровнено с боковыми отступами текста)
   const y = 48;          // --space-7
-  const letterSp = -0.18; // -0.01em × 18px
-
-  ctx.save();
-  ctx.font = `900 ${fontSize}px ${FONT_SANS}`;
-  if ('letterSpacing' in ctx) ctx.letterSpacing = '-0.01em';
-
-  const metrics = ctx.measureText(text);
-  const textWidth = metrics.width + letterSp * (text.length - 1);
-  const ascent  = metrics.actualBoundingBoxAscent  || fontSize;
-  const descent = metrics.actualBoundingBoxDescent || 4;
-  const textHeight = ascent + descent;
-
-  const innerWidth = dotSize + gap + textWidth;
-  const w = innerWidth + padX * 2;
-  const h = textHeight + padY * 2;
-  const r = h / 2;
-
-  // Белая пилюля (на тёмном фоне инверсия — белая)
-  roundRect(ctx, x, y, w, h, r);
-  ctx.fillStyle = COLOR.ink;
-  ctx.fill();
-
-  // Красная точка
-  const dotX = x + padX;
-  const dotY = y + h / 2;
-  ctx.beginPath();
-  ctx.arc(dotX + dotSize / 2, dotY, dotSize / 2, 0, Math.PI * 2);
-  ctx.fillStyle = COLOR.accent;
-  ctx.fill();
-
-  // Тёмный текст (инверсия ink → ink-inv)
-  const textX = dotX + dotSize + gap;
-  const textY = y + h / 2;
-  ctx.fillStyle = COLOR.inkInv;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, textX, textY);
-
-  ctx.restore();
+  // image отрендерен в 2× — рисуем в исходном размере (делим на 2)
+  const w = brandCapsuleImg.naturalWidth  / 2;
+  const h = brandCapsuleImg.naturalHeight / 2;
+  ctx.drawImage(brandCapsuleImg, x, y, w, h);
 }
 
 /* ── Текст в нижнем блоке ──────────────────────────── */
@@ -805,6 +817,7 @@ downloadBtn.addEventListener('click', () => {
 // иначе Canvas тихо подставит fallback (system-ui), даже если шрифт загружен в CSS
 async function ensureFontsAndDraw() {
   if (!document.fonts || !document.fonts.load) {
+    await prepareBrandCapsuleImage();
     draw();
     return;
   }
@@ -821,6 +834,9 @@ async function ensureFontsAndDraw() {
   } catch (e) {
     console.warn('Font preload error:', e);
   }
+  // ВАЖНО: стикер рендерим ПОСЛЕ загрузки Inter, иначе html2canvas
+  // запечёт fallback-шрифт. И ДО первого draw(), чтобы он сразу нарисовался.
+  await prepareBrandCapsuleImage();
   draw();
 }
 
